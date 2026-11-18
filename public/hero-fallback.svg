@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe6ff"/><stop offset="1" stop-color="#fff3d6"/></linearGradient>
+  </defs>
+  <rect width="400" height="260" fill="url(#sky)"/>
+  <circle cx="330" cy="60" r="34" fill="#ffd966"/>
+  <rect y="210" width="400" height="50" fill="#bfe3b4"/>
+  <!-- elder (seated) -->
+  <rect x="95" y="150" width="110" height="70" rx="14" fill="#b07a4a"/>
+  <rect x="85" y="120" width="30" height="100" rx="12" fill="#b07a4a"/>
+  <rect x="115" y="130" width="70" height="75" rx="20" fill="#8e44ad"/>
+  <circle cx="150" cy="105" r="30" fill="#f2c9a0"/>
+  <path d="M120 100c2-26 58-26 60 0-10-10-50-10-60 0z" fill="#e8e8e8"/>
+  <circle cx="140" cy="108" r="3" fill="#333"/><circle cx="160" cy="108" r="3" fill="#333"/>
+  <path d="M142 120q8 8 16 0" stroke="#a33" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <rect x="195" y="125" width="14" height="95" rx="6" fill="#6d4c2f"/>
+  <!-- caregiver (standing) -->
+  <rect x="245" y="125" width="60" height="95" rx="22" fill="#2e9e44"/>
+  <circle cx="275" cy="95" r="28" fill="#e9b98f"/>
+  <path d="M247 90c4-30 52-30 56 0-8-12-48-12-56 0z" fill="#3b2a20"/>
+  <circle cx="266" cy="98" r="3" fill="#333"/><circle cx="284" cy="98" r="3" fill="#333"/>
+  <path d="M267 109q8 8 16 0" stroke="#a33" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M245 150 L205 165" stroke="#e9b98f" stroke-width="16" stroke-linecap="round"/>
+  <!-- heart -->
+  <path d="M200 60s-22-14-22-30a12 12 0 0 1 22-5 12 12 0 0 1 22 5c0 16-22 30-22 30z" fill="#e53935"/>
+</svg>
