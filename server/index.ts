@@ -9,6 +9,7 @@ import { randomUUID } from "node:crypto";
 import { WebSocketServer, WebSocket } from "ws";
 import { PROVIDERS, isConfigured, chatComplete, chatStream } from "./ai/providers.js";
 import { createRobot, RobotCommand } from "./robot/adapter.js";
+import { ttsStatus, synthesize } from "./tts.js";
 
 const app = express();
 app.use(cors());
@@ -22,7 +23,7 @@ const writeSos = (a: any[]) => fs.writeFileSync(SOS_FILE, JSON.stringify(a, null
 
 const SYSTEM: Record<string, string> = {
   en: "You are a warm, patient companion for an elderly resident of a care center. Use short, simple sentences and a kind tone. Reply in English. Never diagnose or give medicine dosages; for any health worry, gently tell them to call a caregiver using the red Call Caregiver button. Suggest games, stories or music to keep them engaged.",
-  th: "คุณเป็นเพื่อนคุยที่อบอุ่นและอดทนสำหรับผู้สูงอายุในศูนย์ดูแล ใช้ประโยคสั้น ๆ เข้าใจง่าย น้ำเสียงอ่อนโยน ตอบเป็นภาษาไทย ห้ามวินิจฉัยโรคหรือบอกขนาดยา หากมีเรื่องสุขภาพให้บอกให้กดปุ่มเรียกพนักงานสีแดง และชวนเล่นเกม เล่าเรื่อง หรือฟังเพลง",
+  th: "คุณเป็นเพื่อนคุยที่อบอุ่นและอดทนสำหรับผู้สูงอายุในศูนย์ดูแล ใช้ประโยคสั้น ๆ เข้าใจง่าย น้ำเสียงอ่อนโยน ตอบเป็นภาษาไทย ห้ามวินิจฉัยโรคหรือบอกขนาดยา หากมีเรื่องสุขภาพให้บอกให้กดปุ่มเรียกพนักงานสีแดง และชวนเล่นเกม เล่าเรื่อง หรือฟังเพลง ใช้คำลงท้ายว่า \"ค่ะ\" หรือ \"นะคะ\" เท่านั้น ห้ามใช้ \"ครับ\" และห้ามเขียนคำลงท้ายซ้อนกันด้วยเครื่องหมาย / เช่น ครับ/ค่ะ",
 };
 
 const robot = createRobot();
@@ -115,6 +116,22 @@ app.post("/api/sos/:id/ack", (req, res) => {
   if (a) a.acked = true;
   writeSos(list);
   res.json({ ok: true });
+});
+
+// Text-to-speech with the computer's own voices (Thai + English), used by every browser/tablet
+app.get("/api/tts/status", async (_req, res) => res.json(await ttsStatus()));
+app.post("/api/tts", async (req, res) => {
+  const { text, lang, rate } = req.body ?? {};
+  if (typeof text !== "string" || !text.trim() || text.length > 800) return res.status(400).json({ error: "bad text" });
+  try {
+    const file = await synthesize(text, lang === "th" ? "th" : "en", Number(rate) || 0.92);
+    res.setHeader("Content-Type", "audio/wav");
+    res.setHeader("Cache-Control", "private, max-age=3600");
+    res.sendFile(file);
+  } catch (e: any) {
+    console.error("[tts]", e.message);
+    res.status(503).json({ error: "tts unavailable" });
+  }
 });
 
 // Addresses other devices on the same Wi-Fi / hotspot can use to reach this computer

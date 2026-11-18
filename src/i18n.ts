@@ -30,6 +30,11 @@ const dict = {
   qThanks: { en: "Thank you", th: "ขอบคุณ" },
   qCall: { en: "Call me", th: "โทรหาหน่อย" },
   sameWifi: { en: "Your family must be on the same Wi-Fi or hotspot as this device to open the link.", th: "ครอบครัวต้องเชื่อมต่อ Wi-Fi หรือฮอตสปอตเดียวกับอุปกรณ์เครื่องนี้ จึงจะเปิดลิงก์ได้" },
+  voiceEngine: { en: "Voice source", th: "แหล่งเสียง" },
+  engineAuto: { en: "Automatic (recommended)", th: "อัตโนมัติ (แนะนำ)" },
+  engineServer: { en: "Computer voice (works for Thai)", th: "เสียงจากคอมพิวเตอร์ (พูดไทยได้)" },
+  engineBrowser: { en: "Browser voice", th: "เสียงจากเบราว์เซอร์" },
+  computerVoice: { en: "Computer voice", th: "เสียงคอมพิวเตอร์" },
   changeMode: { en: "Change mode", th: "เปลี่ยนโหมด" },
   appName: { en: "MEDICARE", th: "MEDICARE" },
   startDesc: {

@@ -74,10 +74,68 @@ if (synth && typeof window !== "undefined") {
   window.addEventListener("pointerdown", unlock);
 }
 
+/* ---------------- computer voice (server) ---------------- */
+type Engine = "auto" | "server" | "browser";
+export const getEngine = (): Engine => { try { return (localStorage.getItem("voice-engine") as Engine) || "auto"; } catch { return "auto"; } };
+export const setEngine = (e: Engine) => { try { localStorage.setItem("voice-engine", e); } catch { /* ignore */ } };
+
+export interface ServerVoices { available: boolean; voices: { th: string | null; en: string | null } }
+let serverInfo: ServerVoices | null = null;
+let serverBroken = false;
+fetch("/api/tts/status").then((r) => r.json()).then((d) => { serverInfo = d; listeners.forEach((l) => l()); }).catch(() => { /* no server voice */ });
+export const getServerVoices = () => serverInfo;
+
+/** Use the computer's voice (Kanya for Thai, etc.) when it exists and the browser has no good voice for the language. */
+function useServer(lang: Lang) {
+  if (serverBroken || !serverInfo?.available || !serverInfo.voices[lang]) return false;
+  const e = getEngine();
+  if (e === "server") return true;
+  if (e === "browser") return false;
+  return lang === "th" || voicesFor(lang).length === 0;
+}
+
+const audio = typeof Audio !== "undefined" ? new Audio() : null;
+let stopCurrent: (() => void) | null = null;
+
+// iPad/Safari: unlock audio playback with the first tap
+if (audio && typeof window !== "undefined") {
+  const unlockAudio = () => {
+    audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+    audio.play().catch(() => { /* ignore */ });
+    window.removeEventListener("pointerdown", unlockAudio);
+  };
+  window.addEventListener("pointerdown", unlockAudio);
+}
+
+async function fetchAudio(text: string, lang: Lang): Promise<string> {
+  const r = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, lang, rate: getRate() }) });
+  if (!r.ok) throw new Error("tts failed");
+  return URL.createObjectURL(await r.blob());
+}
+
+/** Plays one audio URL. Resolves true when it finished, false when it was stopped or failed. */
+function playUrl(url: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (!audio) return resolve(false);
+    const done = (ok: boolean) => { audio.onended = null; audio.onerror = null; stopCurrent = null; URL.revokeObjectURL(url); resolve(ok); };
+    stopCurrent = () => { audio.pause(); done(false); };
+    audio.onended = () => done(true);
+    audio.onerror = () => done(false);
+    audio.src = url;
+    audio.playbackRate = 1;
+    audio.play().catch(() => done(false));
+  });
+}
+
 /* ---------------- speaking ---------------- */
-/** Removes markdown and emoji so the voice does not read symbols aloud. */
+/** Removes markdown, emoji and mixed Thai endings so the voice does not read symbols aloud. */
 export const cleanForSpeech = (s: string) =>
-  s.replace(/[*_`#>~]+/g, "").replace(/\p{Extended_Pictographic}/gu, "").replace(/\s+/g, " ").trim();
+  s.replace(/[*_`#>~]+/g, "")
+    .replace(/\p{Extended_Pictographic}/gu, "")
+    .replace(/(?:ครับ|คับ)\s*\/\s*(ค่ะ|คะ)/g, "$1")
+    .replace(/(ค่ะ|คะ)\s*\/\s*(?:ครับ|คับ)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
 
 /** Splits long text into short pieces (browsers cut off long utterances). */
 function splitForSpeech(text: string): string[] {
@@ -99,29 +157,64 @@ function splitForSpeech(text: string): string[] {
 }
 
 let token = 0;
-export const isSpeaking = () => !!synth?.speaking;
-export function stopSpeaking() { token++; synth?.cancel(); }
+let queue: Promise<unknown> = Promise.resolve();
+export const isSpeaking = () => !!synth?.speaking || (!!audio && !audio.paused && !audio.ended);
+export function stopSpeaking() { token++; synth?.cancel(); stopCurrent?.(); }
 
 /** Speaks the text (replacing anything already speaking). onDone runs after the last word, not when interrupted. */
 export function speak(text: string, lang: Lang, onDone?: () => void) {
   const clean = cleanForSpeech(text);
-  if (!synth || !clean) { onDone?.(); return; }
+  if (!clean) { onDone?.(); return; }
   const my = ++token;
-  synth.cancel();
+  synth?.cancel();
+  stopCurrent?.();
   const chunks = splitForSpeech(clean);
-  const next = (i: number) => {
-    if (my !== token) return;
-    if (i >= chunks.length) { onDone?.(); return; }
-    const u = utter(chunks[i], lang);
-    u.onend = () => next(i + 1);
-    u.onerror = (e) => { if (e.error === "interrupted" || e.error === "canceled") return; next(i + 1); };
-    synth.speak(u);
+
+  const browser = () => {
+    if (!synth) { onDone?.(); return; }
+    const next = (i: number) => {
+      if (my !== token) return;
+      if (i >= chunks.length) { onDone?.(); return; }
+      const u = utter(chunks[i], lang);
+      u.onend = () => next(i + 1);
+      u.onerror = (e) => { if (e.error === "interrupted" || e.error === "canceled") return; next(i + 1); };
+      synth.speak(u);
+    };
+    setTimeout(() => next(0), 60); // lets cancel() finish (Chrome drops speech started right after cancel)
   };
-  setTimeout(() => next(0), 60); // lets cancel() finish (Chrome drops speech started right after cancel)
+
+  if (!useServer(lang)) return browser();
+
+  (async () => {
+    let pending = fetchAudio(chunks[0], lang);
+    for (let i = 0; i < chunks.length; i++) {
+      const upcoming = i + 1 < chunks.length ? fetchAudio(chunks[i + 1], lang) : null; // prepare the next piece while this one plays
+      let url: string;
+      try { url = await pending; } catch { serverBroken = true; if (my === token) browser(); return; }
+      if (my !== token) { URL.revokeObjectURL(url); return; }
+      const ok = await playUrl(url);
+      if (my !== token) return;
+      if (!ok) { serverBroken = true; browser(); return; }
+      pending = upcoming ?? pending;
+    }
+    if (my === token) onDone?.();
+  })();
 }
 
 /** Speaks one chunk WITHOUT cutting off what is already speaking (chunks queue up). */
 export function speakChunk(text: string, lang: Lang, onDone: () => void) {
+  if (useServer(lang)) {
+    const gen = token;
+    const ready = fetchAudio(text, lang).catch(() => null);
+    queue = queue.then(async () => {
+      const url = await ready;
+      if (gen !== token) { if (url) URL.revokeObjectURL(url); return; }
+      if (!url) { onDone(); return; }
+      await playUrl(url);
+      if (gen === token) onDone();
+    });
+    return;
+  }
   if (!synth) { onDone(); return; }
   const u = utter(text, lang);
   u.onend = onDone;

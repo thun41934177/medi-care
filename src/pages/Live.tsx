@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "../store";
-import { speakChunk, cleanForSpeech, listen, canListen, looksLikeEmergency } from "../lib/speech";
+import { speakChunk, cleanForSpeech, listen, canListen, looksLikeEmergency, stopSpeaking } from "../lib/speech";
 import { streamChat } from "../lib/chatStream";
 import Icon from "../components/Icon";
 
@@ -46,7 +46,7 @@ export default function Live() {
       gen.current++;
       ac.current?.abort();
       rec.current?.abort();
-      window.speechSynthesis?.cancel();
+      stopSpeaking();
       robot("neutral");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -146,7 +146,7 @@ export default function Live() {
     gen.current++;
     ac.current?.abort();
     rec.current?.abort();
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     pending.current = 0;
     speaking.current = false;
     setPaused(false);

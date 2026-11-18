@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { db, Med, todayStr } from "../db";
 import { useApp } from "../store";
-import { speak } from "./speech";
+import { speak, stopSpeaking } from "./speech";
 import Icon from "../components/Icon";
 
 const hhmm = () => new Date().toTimeString().slice(0, 5);
@@ -37,7 +37,7 @@ export default function ReminderWatcher() {
   async function answer(status: "taken" | "skipped") {
     if (status === "taken") await db.doses.add({ medId: due!.id!, date: todayStr(), status });
     else snoozed.current[due!.id!] = Date.now() + 10 * 60_000; // ask again in 10 min
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     setDue(null);
   }
 

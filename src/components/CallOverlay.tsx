@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRoom } from "../lib/room";
 import { useApp } from "../store";
-import { speak } from "../lib/speech";
+import { speak, stopSpeaking } from "../lib/speech";
 import Icon from "./Icon";
 
 /** Full-screen incoming-call / video-call screen. Rendered once, shows on any page. */
@@ -23,7 +23,7 @@ export default function CallOverlay() {
     const say = () => { speak(`${callPeer} ${t("isCalling")}`, lang); try { navigator.vibrate?.([400, 200, 400]); } catch { /* ignore */ } };
     say();
     const id = setInterval(say, 6000);
-    return () => { clearInterval(id); window.speechSynthesis?.cancel(); };
+    return () => { clearInterval(id); stopSpeaking(); };
   }, [phase, callPeer, lang, t]);
 
   if (phase === "idle") return null;

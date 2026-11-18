@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useApp } from "../store";
 import PageHeader from "../components/PageHeader";
 import Icon from "../components/Icon";
-import { voicesFor, getVoicePref, setVoicePref, getRate, setRate, speak, onVoicesChanged, pickVoice } from "../lib/speech";
+import { voicesFor, getVoicePref, setVoicePref, getRate, setRate, speak, onVoicesChanged, pickVoice, getEngine, setEngine, getServerVoices } from "../lib/speech";
 
 export default function Settings() {
   const { t, lang, name, room, provider, scale, autoSpeak, set } = useApp();
@@ -45,7 +45,16 @@ export default function Settings() {
         <div>
           <div className="card">
             <h2><Icon name="volume" size={22} /> {t("voiceSettings")}</h2>
-            {voices.length === 0 ? (
+            <label style={{ marginTop: 0 }}>{t("voiceEngine")}</label>
+            <select value={getEngine()} onChange={(e) => { setEngine(e.target.value as "auto" | "server" | "browser"); bump((n) => n + 1); }}>
+              <option value="auto">{t("engineAuto")}</option>
+              <option value="server">{t("engineServer")}</option>
+              <option value="browser">{t("engineBrowser")}</option>
+            </select>
+            {getServerVoices()?.available && (
+              <p className="muted" style={{ margin: ".4rem 0 0" }}>{t("computerVoice")}: {getServerVoices()!.voices[lang] ?? "—"}</p>
+            )}
+            {voices.length === 0 && !getServerVoices()?.voices[lang] ? (
               <p className="msg-bad" style={{ textAlign: "left" }}>{t("voiceNone")}</p>
             ) : (
               <>

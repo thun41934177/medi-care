@@ -1,0 +1,31 @@
+<!doctype html><meta charset="utf-8"><title>Voice test</title>
+<body style="font:16px system-ui;padding:1rem;max-width:40rem">
+<h2>Thai voice test</h2>
+<button id="a" style="font-size:1.2rem;padding:.8rem">Play Thai (computer voice)</button>
+<button id="b" style="font-size:1.2rem;padding:.8rem">Play Thai (browser voice)</button>
+<pre id="out" style="white-space:pre-wrap"></pre>
+<script>
+const out=document.getElementById("out"); const log=(m)=>{out.textContent+=m+"\n"};
+const TH="สวัสดีค่ะ ยินดีที่ได้คุยกับคุณนะคะ";
+async function server(){
+  try{
+    const st=await (await fetch("/api/tts/status")).json(); log("server status: "+JSON.stringify(st));
+    const r=await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:TH,lang:"th",rate:.92})});
+    log("tts http "+r.status+" type "+r.headers.get("content-type"));
+    const blob=await r.blob(); log("audio bytes "+blob.size);
+    const a=new Audio(URL.createObjectURL(blob));
+    a.onended=()=>log("PLAY ENDED ok, duration "+a.duration.toFixed(2)+"s");
+    a.onerror=()=>log("AUDIO ERROR "+(a.error&&a.error.message));
+    await a.play(); log("play() started");
+  }catch(e){log("FAIL: "+e)}
+}
+function browser(){
+  const vs=speechSynthesis.getVoices(); const th=vs.filter(v=>v.lang.toLowerCase().startsWith("th"));
+  log("browser voices total "+vs.length+", Thai: "+th.map(v=>v.name+" ("+v.lang+")").join(", "));
+  const u=new SpeechSynthesisUtterance(TH); u.lang="th-TH"; if(th[0])u.voice=th[0];
+  u.onstart=()=>log("browser speech started"); u.onend=()=>log("browser speech ended"); u.onerror=e=>log("browser speech error: "+e.error);
+  speechSynthesis.speak(u);
+}
+document.getElementById("a").onclick=server; document.getElementById("b").onclick=browser;
+if(location.hash==="#auto"){speechSynthesis.onvoiceschanged=()=>{}; setTimeout(()=>{server().then(()=>setTimeout(()=>{browser();setTimeout(()=>document.title="DONE",3000)},5000))},500)}
+</script>
