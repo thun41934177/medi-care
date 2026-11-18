@@ -29,3 +29,12 @@ Resident opens Anti-loneliness > Family & Friends, shares the invite link (`/joi
 Calls are peer-to-peer WebRTC; `server/index.ts` only relays messages and call setup over `/ws`.
 - Camera/microphone work only on `https://` or `localhost`. For family on other phones, serve the app over HTTPS (e.g. a Cloudflare Tunnel or a hosted server).
 - Only a public STUN server is configured; add a TURN server in `src/lib/room.tsx` if calls fail behind strict networks.
+
+## Accounts and the administrator
+- First start: open the app and sign in screen asks you to create the **administrator** account (password 8+ characters).
+- The administrator (`/admin`) adds residents/administrators, sees who is online, medicines taken or missed, health readings,
+  games and SOS alerts, resets passwords, disables or deletes accounts.
+- Residents sign in once per device (stays signed in 30 days). Each person has their own local data on the device and
+  reports medicines, health, games and SOS to the server so the admin can monitor them. Chat conversations are NOT shared with the admin.
+- Accounts and activity are stored in `server/data/` (not uploaded to GitHub). Back this folder up.
+- Passwords are hashed (scrypt); sign-in is rate limited. Use HTTPS when the app is reachable outside a trusted network.

@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 import { useApp } from "../store";
 import { useRoom } from "../lib/room";
+import { useAuth } from "../lib/auth";
 import Icon, { IconName } from "./Icon";
 import Logo from "./Logo";
 import type { Key } from "../i18n";
@@ -19,6 +20,7 @@ const ITEMS: { to: string; icon: IconName; label: Key }[] = [
 export default function Sidebar() {
   const { t, lang, set } = useApp();
   const { unread } = useRoom();
+  const { logout } = useAuth();
   return (
     <aside className="sidebar">
       <Link to="/home" className="side-brand">
@@ -44,6 +46,7 @@ export default function Sidebar() {
         </div>
         <Link to="/modes" className="side-link"><Icon name="home" size={26} /><span>{t("changeMode")}</span></Link>
         <Link to="/settings" className="side-link"><Icon name="gear" size={26} /><span>{t("settings")}</span></Link>
+        <button className="side-out" onClick={logout}>{t("signOut")}</button>
       </div>
     </aside>
   );

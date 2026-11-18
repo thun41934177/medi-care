@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, Re
 import { useLocation } from "react-router-dom";
 import { useApp } from "../store";
 import { speak } from "./speech";
+import { useAuth } from "./auth";
 
 export interface Peer { id: string; name: string; role: "resident" | "family" }
 export interface RoomMsg { id: string; from: string; role: string; text: string; at: number }
@@ -49,7 +50,8 @@ export function residentCode(): string {
 }
 
 export function RoomProvider({ children }: { children: ReactNode }) {
-  const { lang, name, t } = useApp();
+  const { lang, t } = useApp();
+  const { user } = useAuth();
   const loc = useLocation();
   const isJoinPage = loc.pathname.startsWith("/join");
 
@@ -82,8 +84,9 @@ export function RoomProvider({ children }: { children: ReactNode }) {
 
   // the resident device always listens, so family calls can arrive on any screen
   useEffect(() => {
-    if (!isJoinPage) setConn({ room: residentCode(), role: "resident", name });
-  }, [isJoinPage, name]);
+    if (isJoinPage) return;
+    setConn(user && user.role === "user" ? { room: user.roomCode, role: "resident", name: user.name } : null);
+  }, [isJoinPage, user?.id, user?.name, user?.roomCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const send = (m: unknown) => { if (ws.current?.readyState === WebSocket.OPEN) ws.current.send(JSON.stringify(m)); };
   const signal = (to: string, data: unknown) => send({ type: "signal", to, data });

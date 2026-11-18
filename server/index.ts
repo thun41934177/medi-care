@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import cors from "cors";
 import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
@@ -10,16 +9,15 @@ import { WebSocketServer, WebSocket } from "ws";
 import { PROVIDERS, isConfigured, chatComplete, chatStream } from "./ai/providers.js";
 import { createRobot, RobotCommand } from "./robot/adapter.js";
 import { ttsStatus, synthesize } from "./tts.js";
+import { registerAuth, requireUser, userOf } from "./auth.js";
+import { registerAdmin, addAlert } from "./admin.js";
+import { DATA } from "./store.js";
 
 const app = express();
-app.use(cors());
 app.use(express.json({ limit: "1mb" }));
-
-const DATA = path.resolve("server/data");
-fs.mkdirSync(DATA, { recursive: true });
-const SOS_FILE = path.join(DATA, "sos.json");
-const readSos = (): any[] => { try { return JSON.parse(fs.readFileSync(SOS_FILE, "utf8")); } catch { return []; } };
-const writeSos = (a: any[]) => fs.writeFileSync(SOS_FILE, JSON.stringify(a, null, 2));
+app.set("trust proxy", "loopback");
+registerAuth(app);
+registerAdmin(app);
 
 const SYSTEM: Record<string, string> = {
   en: "You are a warm, patient companion for an elderly resident of a care center. Use short, simple sentences and a kind tone. Reply in English. Never diagnose or give medicine dosages; for any health worry, gently tell them to call a caregiver using the red Call Caregiver button. Suggest games, stories or music to keep them engaged.",
@@ -29,20 +27,18 @@ const SYSTEM: Record<string, string> = {
 const robot = createRobot();
 robot.onEvent((e) => {
   if (e.type === "fall_detected" || (e.type === "button" && e.id === "sos")) {
-    const list = readSos();
-    list.unshift({ id: Date.now().toString(), time: new Date().toISOString(), name: "Robot", room: "-", source: "robot", acked: false });
-    writeSos(list);
+    addAlert({ name: "Robot", room: "-", source: "robot" });
   }
 });
 
-app.get("/api/providers", (_req, res) => {
+app.get("/api/providers", requireUser, (_req, res) => {
   res.json({
     default: process.env.DEFAULT_PROVIDER || "qwen-local",
     providers: PROVIDERS.filter(isConfigured).map(({ id, label, local }) => ({ id, label, local })),
   });
 });
 
-app.post("/api/chat", async (req, res) => {
+app.post("/api/chat", requireUser, async (req, res) => {
   const { messages = [], provider, lang = "en" } = req.body ?? {};
   const wanted = PROVIDERS.find((p) => p.id === provider && isConfigured(p));
   const fallback = PROVIDERS.find((p) => p.id === (process.env.DEFAULT_PROVIDER || "qwen-local"))!;
@@ -64,7 +60,7 @@ const LIVE_EXTRA: Record<string, string> = {
 };
 
 // Streaming chat (Server-Sent Events) used by the live voice call
-app.post("/api/chat/stream", async (req, res) => {
+app.post("/api/chat/stream", requireUser, async (req, res) => {
   const { messages = [], provider, lang = "en", mode } = req.body ?? {};
   const wanted = PROVIDERS.find((p) => p.id === provider && isConfigured(p));
   const fallback = PROVIDERS.find((p) => p.id === (process.env.DEFAULT_PROVIDER || "qwen-local"))!;
@@ -97,30 +93,20 @@ app.post("/api/chat/stream", async (req, res) => {
   res.end();
 });
 
-app.post("/api/sos", async (req, res) => {
-  const { name = "Resident", room = "-" } = req.body ?? {};
-  const alert = { id: Date.now().toString(), time: new Date().toISOString(), name, room, source: "app", acked: false };
-  const list = readSos();
-  list.unshift(alert);
-  writeSos(list);
+app.post("/api/sos", requireUser, (req, res) => {
+  const u = userOf(req);
+  const note = typeof req.body?.note === "string" ? req.body.note.slice(0, 120) : undefined;
+  const alert = addAlert({ userId: u.id, name: u.name, room: u.room, source: note ? "health" : "app", note });
   robot.send({ type: "face", emotion: "alert" });
   if (process.env.SOS_WEBHOOK_URL) {
-    fetch(process.env.SOS_WEBHOOK_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: `SOS from ${name} (room ${room})` }) }).catch(() => {});
+    fetch(process.env.SOS_WEBHOOK_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: `SOS from ${u.name} (room ${u.room})${note ? " - " + note : ""}` }) }).catch(() => {});
   }
-  res.json(alert);
-});
-app.get("/api/sos", (_req, res) => res.json(readSos()));
-app.post("/api/sos/:id/ack", (req, res) => {
-  const list = readSos();
-  const a = list.find((x) => x.id === req.params.id);
-  if (a) a.acked = true;
-  writeSos(list);
-  res.json({ ok: true });
+  res.json({ id: alert.id });
 });
 
 // Text-to-speech with the computer's own voices (Thai + English), used by every browser/tablet
 app.get("/api/tts/status", async (_req, res) => res.json(await ttsStatus()));
-app.post("/api/tts", async (req, res) => {
+app.post("/api/tts", requireUser, async (req, res) => {
   const { text, lang, rate } = req.body ?? {};
   if (typeof text !== "string" || !text.trim() || text.length > 800) return res.status(400).json({ error: "bad text" });
   try {
@@ -135,7 +121,7 @@ app.post("/api/tts", async (req, res) => {
 });
 
 // Addresses other devices on the same Wi-Fi / hotspot can use to reach this computer
-app.get("/api/network", (_req, res) => {
+app.get("/api/network", requireUser, (_req, res) => {
   const ips: string[] = [];
   for (const list of Object.values(os.networkInterfaces())) {
     for (const i of list ?? []) if (i.family === "IPv4" && !i.internal) ips.push(i.address);
@@ -143,8 +129,8 @@ app.get("/api/network", (_req, res) => {
   res.json({ ips });
 });
 
-app.get("/api/robot", (_req, res) => res.json({ adapter: robot.name, connected: robot.connected() }));
-app.post("/api/robot", (req, res) => { robot.send(req.body as RobotCommand); res.json({ ok: true }); });
+app.get("/api/robot", requireUser, (_req, res) => res.json({ adapter: robot.name, connected: robot.connected() }));
+app.post("/api/robot", requireUser, (req, res) => { robot.send(req.body as RobotCommand); res.json({ ok: true }); });
 
 const dist = path.resolve("dist");
 if (fs.existsSync(dist)) {

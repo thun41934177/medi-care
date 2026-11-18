@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { db, HealthLog } from "../db";
+import { syncHealth } from "../lib/sync";
 import { useApp } from "../store";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
@@ -12,7 +13,7 @@ function outOfRange(h: HealthLog) {
 }
 
 export default function Health() {
-  const { t, name, room, lang } = useApp();
+  const { t, lang } = useApp();
   const [logs, setLogs] = useState<HealthLog[]>([]);
   const [sys, setSys] = useState("");
   const [dia, setDia] = useState("");
@@ -28,10 +29,11 @@ export default function Health() {
     const n = (s: string) => (s === "" ? undefined : Number(s));
     const entry: HealthLog = { at: Date.now(), sys: n(sys), dia: n(dia), sugar: n(sugar), sleep: n(sleep), mood: mood || undefined };
     await db.health.add(entry);
+    syncHealth(entry);
     const bad = outOfRange(entry);
     setWarn(bad);
     if (bad) {
-      fetch("/api/sos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: `${name} (health reading)`, room }) }).catch(() => {});
+      fetch("/api/sos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note: "Abnormal health reading" }) }).catch(() => {});
     }
     setSys(""); setDia(""); setSugar(""); setSleep(""); setMood("");
     refresh();

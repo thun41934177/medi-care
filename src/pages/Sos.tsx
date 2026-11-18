@@ -5,12 +5,12 @@ import { speak } from "../lib/speech";
 import Icon from "../components/Icon";
 
 export default function Sos() {
-  const { t, lang, name, room } = useApp();
+  const { t, lang } = useApp();
   const [step, setStep] = useState<"idle" | "confirm" | "sent" | "fail">("idle");
 
   async function send() {
     try {
-      const r = await fetch("/api/sos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, room }) });
+      const r = await fetch("/api/sos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
       if (!r.ok) throw new Error();
       setStep("sent");
       speak(t("sosSent"), lang);

@@ -1,5 +1,6 @@
-import { Routes, Route, NavLink, Link, useLocation, useNavigate } from "react-router-dom";
+import { Routes, Route, NavLink, Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "./store";
+import { useAuth } from "./lib/auth";
 import Icon, { IconName } from "./components/Icon";
 import Logo from "./components/Logo";
 import type { Key } from "./i18n";
@@ -16,7 +17,9 @@ import Sidebar from "./components/Sidebar";
 import Meds from "./pages/Meds";
 import Health from "./pages/Health";
 import Sos from "./pages/Sos";
-import Staff from "./pages/Staff";
+import Login from "./pages/Login";
+import Admin from "./pages/Admin";
+import AdminUser from "./pages/AdminUser";
 import Settings from "./pages/Settings";
 import Games from "./pages/Games";
 import ReminderWatcher from "./lib/ReminderWatcher";
@@ -33,13 +36,21 @@ export default function App() {
   const { t, lang, set } = useApp();
   const loc = useLocation();
   const nav = useNavigate();
-  const showChrome = !["/", "/home", "/modes", "/sos", "/staff", "/live"].includes(loc.pathname) && !loc.pathname.startsWith("/join");
+  const { user, loading } = useAuth();
+  const publicPath = loc.pathname === "/" || loc.pathname === "/login" || loc.pathname.startsWith("/join");
+  const showChrome = !!user && user.role === "user" && !["/", "/home", "/modes", "/sos", "/live", "/login"].includes(loc.pathname) && !loc.pathname.startsWith("/join") && !loc.pathname.startsWith("/admin");
   const isHome = ["/home", "/friend", "/activities"].includes(loc.pathname);
+
+  if (loading) return <div className="boot">{t("loading")}</div>;
+  // signed-out people go to the login screen; only administrators may open /admin
+  if (!user && !publicPath) return <Navigate to="/login" replace />;
+  if (user && loc.pathname.startsWith("/admin") && user.role !== "admin") return <Navigate to="/home" replace />;
+  if (user?.role === "admin" && ["/home", "/modes", "/friend", "/activities"].includes(loc.pathname)) return <Navigate to="/admin" replace />;
 
   return (
     <>
-      <ReminderWatcher />
-      <CallOverlay />
+      {user?.role === "user" && <ReminderWatcher />}
+      {user?.role === "user" && <CallOverlay />}
       {showChrome && (
         <div className="appbar">
           {!isHome && <button className="icon-btn" onClick={() => nav(-1)} aria-label={t("back")}><Icon name="back" /></button>}
@@ -68,7 +79,10 @@ export default function App() {
         <Route path="/health" element={<Health />} />
         <Route path="/games" element={<Games />} />
         <Route path="/sos" element={<Sos />} />
-        <Route path="/staff" element={<Staff />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin/users/:id" element={<AdminUser />} />
+        <Route path="/staff" element={<Navigate to="/admin" replace />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
       </div>

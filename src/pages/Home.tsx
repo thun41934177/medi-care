@@ -1,10 +1,12 @@
 import { Link, Navigate } from "react-router-dom";
 import { useApp, localDate, Mode } from "../store";
+import { useAuth } from "../lib/auth";
 import Icon, { IconName } from "../components/Icon";
 
 /** "Select Mode" screen, built from design picture 2 (public/modes.jpg is the photo cut from it). */
 export default function Home({ change = false }: { change?: boolean }) {
   const { t, lang, name, set, mode, modeDay } = useApp();
+  const { logout } = useAuth();
   // Mode is asked once a day: after it is chosen, Home goes straight to that mode's page.
   if (!change && mode && modeDay === localDate()) return <Navigate to={mode === "friend" ? "/friend" : "/activities"} replace />;
   const h = new Date().getHours();
@@ -24,6 +26,7 @@ export default function Home({ change = false }: { change?: boolean }) {
           <button className={lang === "th" ? "primary" : ""} onClick={() => set({ lang: "th" })}>ไทย</button>
         </div>
         <Link to="/settings"><button className="icon-btn" aria-label={t("settings")}><Icon name="gear" /></button></Link>
+        <button className="small" onClick={logout}>{t("signOut")}</button>
       </div>
 
       <div className="modes-head">

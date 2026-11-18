@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../store";
+import { useAuth } from "../lib/auth";
 import PageHeader from "../components/PageHeader";
 import Icon from "../components/Icon";
 import { voicesFor, getVoicePref, setVoicePref, getRate, setRate, speak, onVoicesChanged, pickVoice, getEngine, setEngine, getServerVoices } from "../lib/speech";
@@ -10,6 +11,7 @@ export default function Settings() {
   const [providers, setProviders] = useState<{ id: string; label: string }[]>([]);
   const [def, setDef] = useState("");
   const [robot, setRobot] = useState<{ adapter: string; connected: boolean } | null>(null);
+  const { user, logout } = useAuth();
   const [, bump] = useState(0);
   const [rate, setRateState] = useState(getRate());
 
@@ -28,10 +30,13 @@ export default function Settings() {
       <div className="cols">
         <div>
           <div className="card">
-            <label style={{ marginTop: 0 }}>{t("name")}</label>
-            <input value={name} onChange={(e) => set({ name: e.target.value })} />
-            <label>{t("room")}</label>
-            <input value={room} onChange={(e) => set({ room: e.target.value })} />
+            <h2>{t("account")}</h2>
+            <div className="account">
+              <span className="peer-avatar">{name.slice(0, 1).toUpperCase()}</span>
+              <div className="grow"><b>{name}</b><div className="muted">@{user?.username} · {t("room")} {room}</div></div>
+            </div>
+            <p className="muted" style={{ margin: ".6rem 0 .8rem" }}>{t("accountNote")}</p>
+            <button onClick={logout}>{t("signOut")}</button>
             <label>{t("language")}</label>
             <div className="seg">
               <button className={lang === "en" ? "primary" : ""} onClick={() => set({ lang: "en" })}>English</button>
@@ -94,7 +99,6 @@ export default function Settings() {
           </div>
         </div>
       </div>
-      <Link to="/staff"><button><Icon name="users" size={22} /> {t("staff")}</button></Link>
     </div>
   );
 }

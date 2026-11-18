@@ -10,8 +10,8 @@ class AppDB extends Dexie {
   doses!: Table<DoseLog, number>;
   health!: Table<HealthLog, number>;
   games!: Table<GameLog, number>;
-  constructor() {
-    super("care-companion");
+  constructor(name: string) {
+    super(name);
     this.version(1).stores({
       meds: "++id",
       doses: "++id, medId, date",
@@ -20,6 +20,18 @@ class AppDB extends Dexie {
     });
   }
 }
-export const db = new AppDB();
 
-export const todayStr = () => new Date().toISOString().slice(0, 10);
+/** Every signed-in person gets their own local database, so people sharing a tablet never see each other's data. */
+export let db = new AppDB("care-companion-guest");
+export function openUserDb(userId: string) {
+  const name = `care-companion-${userId}`;
+  if (db.name === name) return;
+  db.close();
+  db = new AppDB(name);
+}
+
+/** Local calendar date (not UTC), so "today" changes at local midnight. */
+export const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};

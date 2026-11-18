@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../lib/auth";
 import { useApp } from "../store";
 import { speak } from "../lib/speech";
 import Icon from "../components/Icon";
@@ -8,6 +9,7 @@ import Logo from "../components/Logo";
 export default function Start() {
   const { t, lang, set } = useApp();
   const nav = useNavigate();
+  const { user } = useAuth();
   return (
     <div className="splash">
       <div className="splash-photo">
@@ -25,7 +27,7 @@ export default function Start() {
         <Logo size={64} />
         <h1 className="brand">{t("appName")}</h1>
         <p className="lead">{t("startDesc")}</p>
-        <button className="cta" onClick={() => { speak(t("welcome"), lang); nav("/home"); }}>
+        <button className="cta" onClick={() => { speak(t("welcome"), lang); nav(user ? (user.role === "admin" ? "/admin" : "/home") : "/login"); }}>
           {t("getStarted")} <Icon name="arrow" size={32} stroke={2.6} />
         </button>
       </div>
