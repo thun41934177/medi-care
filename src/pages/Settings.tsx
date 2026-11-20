@@ -14,10 +14,13 @@ export default function Settings() {
   const { user, logout } = useAuth();
   const [, bump] = useState(0);
   const [rate, setRateState] = useState(getRate());
+  const [share, setShare] = useState("");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetch("/api/providers").then((r) => r.json()).then((d) => { setProviders(d.providers); setDef(d.default); }).catch(() => {});
     fetch("/api/robot").then((r) => r.json()).then(setRobot).catch(() => {});
+    fetch("/api/network").then((r) => r.json()).then((d) => { if (d.ips?.length) setShare(`http://${d.ips[0]}:${d.port}`); }).catch(() => {});
     return onVoicesChanged(() => bump((n) => n + 1));
   }, []);
 
@@ -85,6 +88,17 @@ export default function Settings() {
               <button className="primary" onClick={() => speak(t("voiceSample"), lang)}><Icon name="volume" size={22} /> {t("voiceTest")}</button>
             </div>
           </div>
+
+          {share && (
+            <div className="card">
+              <h2><Icon name="link" size={22} /> {t("shareApp")}</h2>
+              <div className="linkbox big-link">{share}</div>
+              <p className="muted" style={{ margin: ".6rem 0 .8rem", fontSize: ".92rem" }}>{t("shareHelp")}</p>
+              <button onClick={async () => { try { await navigator.clipboard.writeText(share); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* ignore */ } }}>
+                {copied ? `✓ ${t("copied")}` : t("copyLink")}
+              </button>
+            </div>
+          )}
 
           <div className="card">
             <label style={{ marginTop: 0 }}>{t("chooseAi")}</label>

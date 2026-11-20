@@ -135,7 +135,7 @@ app.get("/api/network", requireUser, (_req, res) => {
   for (const list of Object.values(os.networkInterfaces())) {
     for (const i of list ?? []) if (i.family === "IPv4" && !i.internal) ips.push(i.address);
   }
-  res.json({ ips });
+  res.json({ ips, port: Number(process.env.PORT) || 3001 });
 });
 
 app.get("/api/robot", requireUser, (_req, res) => res.json({ adapter: robot.name, connected: robot.connected() }));

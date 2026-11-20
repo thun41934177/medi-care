@@ -3,6 +3,7 @@ import { db, Med, todayStr } from "../db";
 import { useApp } from "../store";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
+import Empty from "../components/Empty";
 
 export default function Meds() {
   const { t } = useApp();
@@ -41,7 +42,7 @@ export default function Meds() {
       {meds.length > 0 && <div className="progress"><i style={{ width: `${(done / meds.length) * 100}%` }} /></div>}
 
       <div className="cols"><div>
-      {meds.length === 0 && <div className="card empty">{t("noMeds")}</div>}
+      {meds.length === 0 && <Empty icon="pill" title={t("noMeds")} hint={t("noMedsHint")} />}
       {meds.map((m) => (
         <div className="card med-row" key={m.id} style={taken.has(m.id!) ? { opacity: .75 } : undefined}>
           <span className="med-time">{m.time}</span>

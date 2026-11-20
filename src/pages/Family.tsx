@@ -15,7 +15,7 @@ export default function Family() {
   useEffect(() => {
     if (!["localhost", "127.0.0.1"].includes(location.hostname)) return;
     fetch("/api/network").then((r) => r.json()).then((d) => {
-      if (d.ips?.length) setBase(`${location.protocol}//${d.ips[0]}${location.port ? ":" + location.port : ""}`);
+      if (d.ips?.length) setBase(`${location.protocol}//${d.ips[0]}:${d.port}`);
     }).catch(() => {});
   }, []);
   const link = `${base}/join/${code}`;

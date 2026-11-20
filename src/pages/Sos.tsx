@@ -3,9 +3,11 @@ import { Link } from "react-router-dom";
 import { useApp } from "../store";
 import { speak } from "../lib/speech";
 import Icon from "../components/Icon";
+import Logo from "../components/Logo";
 
+/** Emergency screen: one big button, a confirmation step, then a clear "help is coming" result. */
 export default function Sos() {
-  const { t, lang } = useApp();
+  const { t, lang, name, room } = useApp();
   const [step, setStep] = useState<"idle" | "confirm" | "sent" | "fail">("idle");
 
   async function send() {
@@ -21,32 +23,53 @@ export default function Sos() {
   }
 
   return (
-    <div className="page" style={{ textAlign: "center", paddingTop: "3rem" }}>
-      {step === "idle" && (
-        <>
-          <button className="sos-orb" onClick={() => setStep("confirm")}>
-            <Icon name="alert" size={84} stroke={2} />
-            <span style={{ maxWidth: "12rem" }}>{t("sosPress")}</span>
-          </button>
-        </>
-      )}
-      {step === "confirm" && (
-        <>
-          <p className="big">{t("sosConfirm")}</p>
-          <div className="row" style={{ justifyContent: "center" }}>
-            <button className="danger" style={{ fontSize: "2rem", minWidth: "9rem", minHeight: "6rem" }} onClick={send}>{t("yes")}</button>
-            <button style={{ fontSize: "2rem", minWidth: "9rem", minHeight: "6rem" }} onClick={() => setStep("idle")}>{t("no")}</button>
+    <div className="sos-page">
+      <header className="sos-head">
+        <Link to="/home" className="sos-back"><Icon name="back" size={20} /> {t("home")}</Link>
+        <span className="brandmark"><Logo size={26} color="#1f2050" /><span>MEDICARE</span></span>
+      </header>
+
+      <main className="sos-main">
+        <div className="sos-who"><Icon name="users" size={20} /> <b>{name}</b> <span>· {t("room")} {room}</span></div>
+
+        {step === "idle" && (
+          <>
+            <h1>{t("sosTitle")}</h1>
+            <p className="muted sos-lead">{t("sosExplain")}</p>
+            <button className="sos-orb" onClick={() => setStep("confirm")}>
+              <Icon name="alert" size={72} stroke={2} />
+              <span>{t("sosPress")}</span>
+            </button>
+          </>
+        )}
+
+        {step === "confirm" && (
+          <>
+            <h1>{t("sosConfirm")}</h1>
+            <div className="sos-confirm">
+              <button className="danger" onClick={send}>{t("yes")}</button>
+              <button onClick={() => setStep("idle")}>{t("no")}</button>
+            </div>
+          </>
+        )}
+
+        {step === "sent" && (
+          <div className="sos-result ok">
+            <span className="sos-badge"><Icon name="check" size={44} stroke={2.6} /></span>
+            <h1>{t("sosSent")}</h1>
+            <p className="muted">{t("sosNotified")}</p>
+            <Link to="/home"><button className="primary"><Icon name="home" size={22} /> {t("home")}</button></Link>
           </div>
-        </>
-      )}
-      {step === "sent" && <p className="big msg-ok"><Icon name="check" size={40} /> {t("sosSent")}</p>}
-      {step === "fail" && (
-        <>
-          <p className="big msg-bad"><Icon name="alert" size={36} /> {t("sosFail")}</p>
-          <button className="danger" onClick={send}>{t("tryAgain")}</button>
-        </>
-      )}
-      <p style={{ marginTop: "3rem" }}><Link to="/home"><button><Icon name="home" size={22} /> {t("home")}</button></Link></p>
+        )}
+
+        {step === "fail" && (
+          <div className="sos-result bad">
+            <span className="sos-badge"><Icon name="alert" size={44} /></span>
+            <h1>{t("sosFail")}</h1>
+            <button className="danger" onClick={send}>{t("tryAgain")}</button>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

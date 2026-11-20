@@ -3,6 +3,7 @@ import { useRoom } from "../lib/room";
 import { useApp } from "../store";
 import { listen, canListen } from "../lib/speech";
 import Icon from "./Icon";
+import Empty from "./Empty";
 import type { Key } from "../i18n";
 
 const QUICK: Key[] = ["qLove", "qOk", "qThanks", "qCall"];
@@ -57,7 +58,7 @@ export default function RoomView({ me, aside }: { me: "resident" | "family"; asi
       </div>
       <div className="rv-main">
       <div className="chat" style={{ marginTop: "1rem" }}>
-        {messages.length === 0 && <div className="empty"><Icon name="chat" size={34} /><br />{t("noMessages")}</div>}
+        {messages.length === 0 && <Empty icon="chat" title={t("noMessages")} />}
         {messages.map((m) => {
           const mine = m.role === me;
           return (

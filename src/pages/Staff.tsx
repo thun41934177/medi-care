@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useApp } from "../store";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
+import Empty from "../components/Empty";
 
 interface Alert { id: string; time: string; name: string; room: string; source: string; note?: string; acked: boolean }
 
@@ -23,7 +24,7 @@ export default function Staff() {
     <div className="page">
       <div style={{ padding: ".7rem 0" }}><Link to="/home"><button><Icon name="home" size={22} /> {t("home")}</button></Link></div>
       <PageHeader icon="users" title={t("alerts")} color="var(--navy)" sub={t("updatedLive")} />
-      {alerts.length === 0 && <div className="card empty">{t("noAlerts")}</div>}
+      {alerts.length === 0 && <Empty icon="check" title={t("noAlerts")} hint={t("noAlertsHint")} />}
       {alerts.map((a) => (
         <div key={a.id} className="card row" style={{ borderColor: a.acked ? "var(--line)" : "var(--red)", borderWidth: a.acked ? 1 : 2 }}>
           <div className="grow">

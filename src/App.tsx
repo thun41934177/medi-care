@@ -25,7 +25,7 @@ import ReminderWatcher from "./lib/ReminderWatcher";
 
 const TABS: { to: string; icon: IconName; label: Key }[] = [
   { to: "/home", icon: "home", label: "home" },
-  { to: "/chat", icon: "chat", label: "talk" },
+  { to: "/chat", icon: "chat", label: "talkShort" },
   { to: "/meds", icon: "pill", label: "meds" },
   { to: "/health", icon: "heart", label: "health" },
   { to: "/games", icon: "game", label: "games" },
@@ -51,13 +51,14 @@ export default function App() {
       {showChrome && (
         <div className="appbar">
           {!isHome && <button className="icon-btn" onClick={() => nav(-1)} aria-label={t("back")}><Icon name="back" /></button>}
-          <span className="brandmark"><Logo size={28} color="#1f2050" /> MEDICARE</span>
+          <span className="brandmark"><Logo size={28} color="#1f2050" /><span className="bm-text">MEDICARE</span></span>
           <span className="grow" />
           <div className="seg">
             <button className={lang === "en" ? "primary" : ""} onClick={() => set({ lang: "en" })}>EN</button>
             <button className={lang === "th" ? "primary" : ""} onClick={() => set({ lang: "th" })}>ไทย</button>
           </div>
           <Link to="/settings"><button className="icon-btn" aria-label={t("settings")}><Icon name="gear" /></button></Link>
+          <Link to="/sos"><button className="danger sos-top" aria-label={t("sos")}><Icon name="alert" size={20} /> SOS</button></Link>
         </div>
       )}
       {showChrome && <Sidebar />}
@@ -83,7 +84,6 @@ export default function App() {
       </div>
       {showChrome && (
         <>
-          <Link to="/sos"><button className="danger sos-fab"><Icon name="alert" /> {t("sos")}</button></Link>
           <nav className="tabbar">
             <div className="tabbar-inner">
               {TABS.map((x) => (

@@ -3,6 +3,7 @@ import { db, HealthLog } from "../db";
 import { useApp } from "../store";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
+import Empty from "../components/Empty";
 
 function outOfRange(h: HealthLog) {
   return (h.sys !== undefined && (h.sys >= 160 || h.sys < 90)) ||
@@ -64,6 +65,7 @@ export default function Health() {
 
       </div><div>
       <h2 style={{ marginTop: 0 }}>{t("history")}</h2>
+      {logs.length === 0 && <Empty icon="heart" title={t("noReadings")} hint={t("noReadingsHint")} />}
       {logs.map((h) => (
         <div className="card" key={h.id} style={outOfRange(h) ? { borderColor: "var(--red)", borderWidth: 2 } : undefined}>
           <div className="row" style={{ justifyContent: "space-between" }}>

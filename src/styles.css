@@ -443,3 +443,35 @@ input[type="range"] { accent-color: var(--navy); padding: 0; border: none; backg
 .mode-card h2 { color: #fff; }
 .tabs2 { display: flex; width: 100%; margin-bottom: 1.1rem; }
 .tabs2 button { flex: 1; min-height: 3rem; }
+
+/* ================= formal polish: empty states, emergency screen, app bar ================= */
+.empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .35rem; padding: 2rem 1.2rem; margin: .8rem 0; background: #fff; border: 1px dashed #c9d0e3; border-radius: 1rem; color: var(--muted); }
+.empty-state b { color: var(--navy); font-size: 1.1rem; }
+.empty-state p { margin: 0; max-width: 24rem; font-size: .95rem; line-height: 1.5; }
+.empty-ico { width: 3.4rem; height: 3.4rem; border-radius: 50%; display: grid; place-items: center; background: #eef1fb; color: var(--navy); margin-bottom: .3rem; }
+
+.sos-page { min-height: 100vh; min-height: 100dvh; background: var(--bg); display: flex; flex-direction: column; }
+.sos-head { display: flex; align-items: center; justify-content: space-between; padding: .9rem clamp(1rem, 4vw, 2.5rem); background: #fff; border-bottom: 1px solid var(--line); }
+.sos-back { display: inline-flex; align-items: center; gap: .4rem; font-weight: 700; color: var(--navy); text-decoration: none; padding: .5rem .9rem; border: 1px solid var(--line); border-radius: .7rem; }
+.sos-head .brandmark { display: inline-flex; align-items: center; gap: .5rem; font-family: "Playfair Display", Georgia, serif; font-weight: 900; color: var(--navy); letter-spacing: .04em; }
+.sos-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1.5rem 1.2rem 3rem; gap: .6rem; }
+.sos-who { display: inline-flex; align-items: center; gap: .5rem; padding: .5rem 1rem; border-radius: 2rem; background: #fff; border: 1px solid var(--line); color: var(--muted); margin-bottom: .6rem; }
+.sos-who b { color: var(--navy); }
+.sos-main h1 { font-size: clamp(1.8rem, 4vw, 2.4rem); }
+.sos-lead { max-width: 28rem; margin: 0 0 1.2rem; font-size: 1.1rem; }
+.sos-orb { width: min(62vw, 15rem); height: min(62vw, 15rem); font-size: 1.3rem; gap: .5rem; padding: 1rem; }
+.sos-confirm { display: flex; gap: 1rem; margin-top: 1rem; }
+.sos-confirm button { min-width: 9rem; min-height: 5.5rem; font-size: 1.8rem; }
+.sos-result { display: flex; flex-direction: column; align-items: center; gap: .8rem; max-width: 28rem; }
+.sos-badge { width: 5.5rem; height: 5.5rem; border-radius: 50%; display: grid; place-items: center; color: #fff; }
+.sos-result.ok .sos-badge { background: var(--green); } .sos-result.bad .sos-badge { background: var(--red); }
+.sos-result p { margin: 0 0 .6rem; font-size: 1.1rem; }
+
+/* app bar (phones/small tablets): compact SOS button instead of a floating one */
+.appbar .sos-top { min-height: 2.6rem; padding: .2rem .9rem; font-weight: 900; letter-spacing: .04em; border-radius: .7rem; }
+.tabbar .tab { white-space: nowrap; }
+@media (max-width: 480px) { .appbar { gap: .4rem; padding: .6rem .7rem; } .appbar .bm-text { display: none; } .appbar .icon-btn { width: 2.8rem; height: 2.8rem; } .appbar .seg button { min-height: 2.4rem; padding: .2rem .7rem; } }
+
+/* family invite code must never spill out of its card */
+.invite .code { font-size: clamp(1.15rem, 1.7vw, 1.7rem); letter-spacing: .1em; white-space: nowrap; overflow: hidden; padding: .7rem .4rem; }
+.big-link { font-size: 1.05rem; font-weight: 700; color: var(--navy); text-align: center; padding: .9rem .6rem; border: 1px dashed #c9d0e3; }
