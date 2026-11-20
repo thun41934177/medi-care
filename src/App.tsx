@@ -18,8 +18,7 @@ import Meds from "./pages/Meds";
 import Health from "./pages/Health";
 import Sos from "./pages/Sos";
 import Login from "./pages/Login";
-import Admin from "./pages/Admin";
-import AdminUser from "./pages/AdminUser";
+import Staff from "./pages/Staff";
 import Settings from "./pages/Settings";
 import Games from "./pages/Games";
 import ReminderWatcher from "./lib/ReminderWatcher";
@@ -38,19 +37,17 @@ export default function App() {
   const nav = useNavigate();
   const { user, loading } = useAuth();
   const publicPath = loc.pathname === "/" || loc.pathname === "/login" || loc.pathname.startsWith("/join");
-  const showChrome = !!user && user.role === "user" && !["/", "/home", "/modes", "/sos", "/live", "/login"].includes(loc.pathname) && !loc.pathname.startsWith("/join") && !loc.pathname.startsWith("/admin");
+  const showChrome = !!user && !["/", "/home", "/modes", "/sos", "/live", "/login"].includes(loc.pathname) && !loc.pathname.startsWith("/join");
   const isHome = ["/home", "/friend", "/activities"].includes(loc.pathname);
 
   if (loading) return <div className="boot">{t("loading")}</div>;
-  // signed-out people go to the login screen; only administrators may open /admin
+  // signed-out people go to the login screen
   if (!user && !publicPath) return <Navigate to="/login" replace />;
-  if (user && loc.pathname.startsWith("/admin") && user.role !== "admin") return <Navigate to="/home" replace />;
-  if (user?.role === "admin" && ["/home", "/modes", "/friend", "/activities"].includes(loc.pathname)) return <Navigate to="/admin" replace />;
 
   return (
     <>
-      {user?.role === "user" && <ReminderWatcher />}
-      {user?.role === "user" && <CallOverlay />}
+      {user && <ReminderWatcher />}
+      {user && <CallOverlay />}
       {showChrome && (
         <div className="appbar">
           {!isHome && <button className="icon-btn" onClick={() => nav(-1)} aria-label={t("back")}><Icon name="back" /></button>}
@@ -80,9 +77,7 @@ export default function App() {
         <Route path="/games" element={<Games />} />
         <Route path="/sos" element={<Sos />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/users/:id" element={<AdminUser />} />
-        <Route path="/staff" element={<Navigate to="/admin" replace />} />
+        <Route path="/staff" element={<Staff />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
       </div>

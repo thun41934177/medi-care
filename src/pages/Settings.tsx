@@ -99,6 +99,7 @@ export default function Settings() {
           </div>
         </div>
       </div>
+      <Link to="/staff"><button><Icon name="users" size={22} /> {t("staff")}</button></Link>
     </div>
   );
 }

@@ -441,3 +441,5 @@ input[type="range"] { accent-color: var(--navy); padding: 0; border: none; backg
 @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } .admin-who { display: none; } .cols { display: block; } }
 @media (min-width: 720px) { .admin .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; } }
 .mode-card h2 { color: #fff; }
+.tabs2 { display: flex; width: 100%; margin-bottom: 1.1rem; }
+.tabs2 button { flex: 1; min-height: 3rem; }

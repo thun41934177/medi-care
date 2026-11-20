@@ -7,26 +7,19 @@ export interface User {
   username: string;
   name: string;
   room: string;
-  role: "admin" | "user";
   roomCode: string; // family invite code for this person
   salt: string;
   hash: string;
-  disabled: boolean;
   createdAt: number;
-  lastSeen: number;
 }
 
+// Older versions had administrator accounts; they simply become normal accounts now.
 let users: User[] = readJson<User[]>("users.json", []);
 const saveUsers = () => writeJson("users.json", users);
 
-export const allUsers = () => users;
-export const findUserById = (id: string) => users.find((u) => u.id === id);
-export const hasAdmin = () => users.some((u) => u.role === "admin" && !u.disabled);
+const findUserById = (id: string) => users.find((u) => u.id === id);
 
-export const publicUser = (u: User) => ({
-  id: u.id, username: u.username, name: u.name, room: u.room, role: u.role,
-  roomCode: u.roomCode, disabled: u.disabled, createdAt: u.createdAt, lastSeen: u.lastSeen,
-});
+export const publicUser = (u: User) => ({ id: u.id, username: u.username, name: u.name, room: u.room, roomCode: u.roomCode });
 
 /* ---------- passwords (scrypt, per-user random salt) ---------- */
 const hashPw = (pw: string, salt: string) => crypto.scryptSync(pw, salt, 64).toString("hex");
@@ -39,46 +32,24 @@ function verifyPw(u: User, pw: string) {
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const newRoomCode = () => Array.from(crypto.randomBytes(8), (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
 
-export const USERNAME_RE = /^[A-Za-z0-9._-]{3,30}$/;
-export function minPassword(role: "admin" | "user") { return role === "admin" ? 8 : 4; }
+const USERNAME_RE = /^[A-Za-z0-9._-]{3,30}$/;
+const MIN_PASSWORD = 4; // short on purpose: residents type it on a tablet
 
-export function createUser(input: { username: string; name: string; room?: string; role: "admin" | "user"; password: string }): User {
+export function createUser(input: { username: string; name: string; room?: string; password: string }): User {
   const username = input.username.trim();
   if (!USERNAME_RE.test(username)) throw new Error("Username must be 3-30 letters, numbers, dot, dash or underscore.");
   if (users.some((u) => u.username.toLowerCase() === username.toLowerCase())) throw new Error("That username is already taken.");
   const name = input.name.trim().slice(0, 60);
-  if (!name) throw new Error("Name is required.");
-  if (input.password.length < minPassword(input.role)) throw new Error(`Password must be at least ${minPassword(input.role)} characters.`);
+  if (!name) throw new Error("Please enter your name.");
+  if (input.password.length < MIN_PASSWORD) throw new Error(`Password must be at least ${MIN_PASSWORD} characters.`);
   const salt = crypto.randomBytes(16).toString("hex");
   const u: User = {
-    id: crypto.randomUUID(), username, name, room: (input.room ?? "-").trim().slice(0, 20) || "-", role: input.role,
-    roomCode: newRoomCode(), salt, hash: hashPw(input.password, salt), disabled: false, createdAt: Date.now(), lastSeen: 0,
+    id: crypto.randomUUID(), username, name, room: (input.room ?? "-").trim().slice(0, 20) || "-",
+    roomCode: newRoomCode(), salt, hash: hashPw(input.password, salt), createdAt: Date.now(),
   };
   users.push(u);
   saveUsers();
   return u;
-}
-
-export function updateUser(id: string, patch: { name?: string; room?: string; disabled?: boolean; password?: string }) {
-  const u = findUserById(id);
-  if (!u) throw new Error("User not found.");
-  if (patch.name !== undefined) { const n = patch.name.trim().slice(0, 60); if (!n) throw new Error("Name is required."); u.name = n; }
-  if (patch.room !== undefined) u.room = patch.room.trim().slice(0, 20) || "-";
-  if (patch.disabled !== undefined) u.disabled = patch.disabled;
-  if (patch.password) {
-    if (patch.password.length < minPassword(u.role)) throw new Error(`Password must be at least ${minPassword(u.role)} characters.`);
-    u.salt = crypto.randomBytes(16).toString("hex");
-    u.hash = hashPw(patch.password, u.salt);
-  }
-  saveUsers();
-  if (u.disabled || patch.password) dropSessionsOf(u.id); // force sign-in again
-  return u;
-}
-
-export function deleteUser(id: string) {
-  users = users.filter((u) => u.id !== id);
-  saveUsers();
-  dropSessionsOf(id);
 }
 
 /* ---------- sessions (random token in an httpOnly cookie; only its hash is stored) ---------- */
@@ -89,10 +60,6 @@ function saveSessions() {
   const now = Date.now();
   for (const k of Object.keys(sessions)) if (sessions[k].expires < now) delete sessions[k];
   writeJson("sessions.json", sessions);
-}
-function dropSessionsOf(userId: string) {
-  for (const k of Object.keys(sessions)) if (sessions[k].userId === userId) delete sessions[k];
-  saveSessions();
 }
 
 function cookieOf(req: Request, name: string) {
@@ -116,8 +83,7 @@ export function currentUser(req: Request): User | null {
   if (!token) return null;
   const s = sessions[sha(token)];
   if (!s || s.expires < Date.now()) return null;
-  const u = findUserById(s.userId);
-  return u && !u.disabled ? u : null;
+  return findUserById(s.userId) ?? null;
 }
 
 export const userOf = (req: Request) => (req as any).user as User;
@@ -125,38 +91,29 @@ export const userOf = (req: Request) => (req as any).user as User;
 export function requireUser(req: Request, res: Response, next: NextFunction) {
   const u = currentUser(req);
   if (!u) return res.status(401).json({ error: "login" });
-  const now = Date.now();
-  if (now - u.lastSeen > 15_000) { u.lastSeen = now; saveUsers(); }
   (req as any).user = u;
   next();
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  requireUser(req, res, () => {
-    if (userOf(req).role !== "admin") return res.status(403).json({ error: "admin only" });
-    next();
-  });
-}
-
-/* ---------- slow down password guessing ---------- */
+/* ---------- slow down password guessing and mass sign-ups ---------- */
 const attempts = new Map<string, { count: number; until: number }>();
 function throttled(key: string) { const a = attempts.get(key); return !!a && a.until > Date.now(); }
-function fail(key: string) {
+function fail(key: string, max = 5, lockMs = 60_000) {
   const a = attempts.get(key) ?? { count: 0, until: 0 };
   a.count += 1;
-  if (a.count >= 5) { a.until = Date.now() + 60_000; a.count = 0; }
+  if (a.count >= max) { a.until = Date.now() + lockMs; a.count = 0; }
   attempts.set(key, a);
 }
 
 export function registerAuth(app: Express) {
-  app.get("/api/auth/status", (_req, res) => res.json({ hasAdmin: hasAdmin() }));
-
-  // First run only: create the administrator account
-  app.post("/api/auth/setup", (req, res) => {
-    if (hasAdmin()) return res.status(403).json({ error: "An administrator already exists." });
+  // Anyone can create their own account
+  app.post("/api/auth/signup", (req, res) => {
+    const key = `signup|${req.ip}`;
+    if (throttled(key)) return res.status(429).json({ error: "Too many new accounts from this device. Please try again later." });
     try {
-      const { name, username, password } = req.body ?? {};
-      const u = createUser({ name: String(name ?? ""), username: String(username ?? ""), password: String(password ?? ""), role: "admin", room: "-" });
+      const { name, username, password, room } = req.body ?? {};
+      const u = createUser({ name: String(name ?? ""), username: String(username ?? ""), password: String(password ?? ""), room: String(room ?? "-") });
+      fail(key, 10, 3600_000); // at most 10 new accounts per device per hour
       startSession(req, res, u.id);
       res.json(publicUser(u));
     } catch (e: any) { res.status(400).json({ error: e.message }); }
@@ -168,10 +125,8 @@ export function registerAuth(app: Express) {
     const key = `${req.ip}|${username.toLowerCase()}`;
     if (throttled(key)) return res.status(429).json({ error: "Too many tries. Please wait a minute." });
     const u = users.find((x) => x.username.toLowerCase() === username.toLowerCase());
-    if (!u || u.disabled || !verifyPw(u, password)) { fail(key); return res.status(401).json({ error: "Wrong username or password." }); }
+    if (!u || !verifyPw(u, password)) { fail(key); return res.status(401).json({ error: "Wrong username or password." }); }
     attempts.delete(key);
-    u.lastSeen = Date.now();
-    saveUsers();
     startSession(req, res, u.id);
     res.json(publicUser(u));
   });

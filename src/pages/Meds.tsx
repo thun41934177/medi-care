@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { db, Med, todayStr } from "../db";
-import { syncMeds, syncDose } from "../lib/sync";
 import { useApp } from "../store";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
@@ -22,18 +21,15 @@ export default function Meds() {
   async function add() {
     if (!name.trim()) return;
     await db.meds.add({ name: name.trim(), time });
-    syncMeds();
     setName("");
     refresh();
   }
   async function markTaken(m: Med) {
     await db.doses.add({ medId: m.id!, date: todayStr(), status: "taken" });
-    syncDose(m.name, m.time, todayStr(), "taken");
     refresh();
   }
   async function remove(m: Med) {
     await db.meds.delete(m.id!);
-    syncMeds();
     refresh();
   }
 

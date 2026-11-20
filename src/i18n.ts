@@ -42,7 +42,7 @@ const dict = {
   confirmPassword: { en: "Confirm password", th: "ยืนยันรหัสผ่าน" },
   showPw: { en: "Show", th: "แสดง" },
   hidePw: { en: "Hide", th: "ซ่อน" },
-  signInHelp: { en: "Please sign in with the account your care team gave you.", th: "กรุณาเข้าสู่ระบบด้วยบัญชีที่ทีมดูแลมอบให้" },
+  signInHelp: { en: "Welcome back. Please sign in to continue.", th: "ยินดีต้อนรับกลับมา กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ" },
   setupTitle: { en: "Create the administrator account", th: "สร้างบัญชีผู้ดูแลระบบ" },
   setupHelp: { en: "This is the first start. The administrator can add residents and monitor everyone.", th: "นี่คือการเริ่มใช้งานครั้งแรก ผู้ดูแลระบบสามารถเพิ่มผู้ใช้และติดตามทุกคนได้" },
   createAdminBtn: { en: "Create administrator", th: "สร้างผู้ดูแลระบบ" },
@@ -85,6 +85,9 @@ const dict = {
   backToList: { en: "All residents", th: "ผู้ใช้ทั้งหมด" },
   alertsCol: { en: "SOS", th: "SOS" },
   updatedLive: { en: "Updates every 5 seconds", th: "อัปเดตทุก 5 วินาที" },
+  createAccount: { en: "Create account", th: "สร้างบัญชี" },
+  signUpHelp: { en: "New here? Make your own account in a minute.", th: "ใหม่ที่นี่? สร้างบัญชีของคุณได้ในไม่กี่นาที" },
+  roomOptional: { en: "Room number (optional)", th: "หมายเลขห้อง (ไม่บังคับ)" },
   changeMode: { en: "Change mode", th: "เปลี่ยนโหมด" },
   appName: { en: "MEDICARE", th: "MEDICARE" },
   startDesc: {

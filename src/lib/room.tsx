@@ -85,7 +85,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
   // the resident device always listens, so family calls can arrive on any screen
   useEffect(() => {
     if (isJoinPage) return;
-    setConn(user && user.role === "user" ? { room: user.roomCode, role: "resident", name: user.name } : null);
+    setConn(user ? { room: user.roomCode, role: "resident", name: user.name } : null);
   }, [isJoinPage, user?.id, user?.name, user?.roomCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const send = (m: unknown) => { if (ws.current?.readyState === WebSocket.OPEN) ws.current.send(JSON.stringify(m)); };

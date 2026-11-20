@@ -10,14 +10,23 @@ import { PROVIDERS, isConfigured, chatComplete, chatStream } from "./ai/provider
 import { createRobot, RobotCommand } from "./robot/adapter.js";
 import { ttsStatus, synthesize } from "./tts.js";
 import { registerAuth, requireUser, userOf } from "./auth.js";
-import { registerAdmin, addAlert } from "./admin.js";
+import { registerActivity, addAlert } from "./activity.js";
 import { DATA } from "./store.js";
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
 app.set("trust proxy", "loopback");
+// Log when another device (iPad, phone) opens the app, to help with "my friend can't connect"
+const seenVisit = new Map<string, number>();
+app.use((req, _res, next) => {
+  const ip = (req.ip ?? "").replace("::ffff:", "");
+  if (req.method === "GET" && !req.path.startsWith("/api") && ip && ip !== "127.0.0.1" && ip !== "::1") {
+    if (Date.now() - (seenVisit.get(ip) ?? 0) > 60_000) { seenVisit.set(ip, Date.now()); console.log(`[visit] ${ip} opened ${req.path}`); }
+  }
+  next();
+});
 registerAuth(app);
-registerAdmin(app);
+registerActivity(app);
 
 const SYSTEM: Record<string, string> = {
   en: "You are a warm, patient companion for an elderly resident of a care center. Use short, simple sentences and a kind tone. Reply in English. Never diagnose or give medicine dosages; for any health worry, gently tell them to call a caregiver using the red Call Caregiver button. Suggest games, stories or music to keep them engaged.",
@@ -200,4 +209,11 @@ wss.on("connection", (ws) => {
 });
 
 const port = Number(process.env.PORT) || 3001;
-server.listen(port, () => console.log(`API on http://localhost:${port}`));
+server.listen(port, () => {
+  console.log(`API on http://localhost:${port}`);
+  for (const list of Object.values(os.networkInterfaces())) {
+    for (const i of list ?? []) {
+      if (i.family === "IPv4" && !i.internal) console.log(`Other devices on this network (iPad, phone): http://${i.address}:${port}`);
+    }
+  }
+});

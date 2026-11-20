@@ -7,6 +7,7 @@
     "dev": "concurrently -n web,api \"vite --host\" \"tsx watch server/index.ts\"",
     "build": "tsc --noEmit && vite build",
     "start": "tsx server/index.ts",
+    "share": "npm run build && npm start",
     "preview": "vite preview --host"
   },
   "dependencies": {

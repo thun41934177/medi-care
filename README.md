@@ -30,11 +30,14 @@ Calls are peer-to-peer WebRTC; `server/index.ts` only relays messages and call s
 - Camera/microphone work only on `https://` or `localhost`. For family on other phones, serve the app over HTTPS (e.g. a Cloudflare Tunnel or a hosted server).
 - Only a public STUN server is configured; add a TURN server in `src/lib/room.tsx` if calls fail behind strict networks.
 
-## Accounts and the administrator
-- First start: open the app and sign in screen asks you to create the **administrator** account (password 8+ characters).
-- The administrator (`/admin`) adds residents/administrators, sees who is online, medicines taken or missed, health readings,
-  games and SOS alerts, resets passwords, disables or deletes accounts.
-- Residents sign in once per device (stays signed in 30 days). Each person has their own local data on the device and
-  reports medicines, health, games and SOS to the server so the admin can monitor them. Chat conversations are NOT shared with the admin.
-- Accounts and activity are stored in `server/data/` (not uploaded to GitHub). Back this folder up.
-- Passwords are hashed (scrypt); sign-in is rate limited. Use HTTPS when the app is reachable outside a trusted network.
+## Accounts
+- Anyone can **Create account** on the sign-in screen (name, username, password of 4+ characters, optional room). There is no administrator.
+- Devices stay signed in for 30 days. Passwords are hashed (scrypt); sign-in and sign-up are rate limited.
+- Each person has their own local data (medicines, health, games) on their device. Chats are not stored on the server.
+- SOS presses are saved on the server and shown on the **Staff** page (Settings > Staff) where caregivers acknowledge them.
+- Accounts and SOS alerts live in `server/data/` (not uploaded to GitHub). Use HTTPS if the app is reachable outside a trusted network.
+
+## Sharing with an iPad / phone
+`npm run share` builds the app and starts it on one address (fast, works on older iPads). The terminal prints the
+address for other devices, e.g. `http://10.0.0.5:3001`. Devices must be on the same Wi-Fi/hotspot, and the hotspot must
+not have "client/AP isolation" turned on. `localhost` only ever works on the computer running the app.
