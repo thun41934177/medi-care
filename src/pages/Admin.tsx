@@ -47,6 +47,8 @@ export default function Admin() {
   const [pw, setPw] = useState("");
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<"all" | Summary["status"]>("all");
 
   const load = useCallback(() => { fetch("/api/admin/overview").then((r) => r.json()).then(setData).catch(() => {}); }, []);
   useEffect(() => { load(); const id = setInterval(load, 5000); return () => clearInterval(id); }, [load]);
@@ -71,7 +73,18 @@ export default function Admin() {
     if (r.ok) { setPwMsg({ ok: true, text: t("passwordChanged") }); setPw(""); load(); } else setPwMsg({ ok: false, text: d.error || "Error" });
   }
 
-  const users = [...(data?.users ?? [])].sort((a, b) => RANK[a.status] - RANK[b.status] || a.name.localeCompare(b.name));
+  const users = [...(data?.users ?? [])]
+    .filter((u) => (filter === "all" || u.status === filter) && `${u.name} ${u.username} ${u.room}`.toLowerCase().includes(q.trim().toLowerCase()))
+    .sort((a, b) => RANK[a.status] - RANK[b.status] || a.name.localeCompare(b.name));
+  function exportResidents() {
+    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const rows = [["name", "username", "room", "condition", "meds_taken", "meds_due", "meds_missed", "last_bp"], ...users.map((u) => [u.name, u.username, u.room, u.status, u.medsTaken, u.medsDue, u.medsMissed, u.latestHealth?.sys !== undefined ? `${u.latestHealth.sys}/${u.latestHealth.dia ?? ""}` : ""])];
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([rows.map((r) => r.map(esc).join(",")).join("\n")], { type: "text/csv" }));
+    a.download = `residents-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
   const tot = data?.totals;
   const stats: { label: string; value: number; tone?: "red" | "amber" }[] = [
     { label: t("residents"), value: tot?.residents ?? 0 },
@@ -107,7 +120,15 @@ export default function Admin() {
 
       <section className="card">
         <h2><Icon name="users" size={22} /> {t("residents")}</h2>
-        {users.length === 0 ? <p className="muted">{t("noUsersYet")}</p> : (
+        <div className="toolbar">
+          <input type="search" placeholder={t("searchResidents")} aria-label={t("searchResidents")} value={q} onChange={(e) => setQ(e.target.value)} />
+          <select value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)} aria-label={t("condition")}>
+            <option value="all">{t("allStatuses")}</option>
+            {(Object.keys(STATUS_KEY) as Summary["status"][]).map((k) => <option key={k} value={k}>{t(STATUS_KEY[k])}</option>)}
+          </select>
+          <button className="small" onClick={exportResidents} disabled={users.length === 0}>{t("exportResidents")}</button>
+        </div>
+        {users.length === 0 ? <p className="muted">{data?.users.length ? t("noMatches") : t("noUsersYet")}</p> : (
           <div className="tbl-wrap">
             <table className="tbl">
               <thead>
