@@ -9,8 +9,9 @@ import { WebSocketServer, WebSocket } from "ws";
 import { PROVIDERS, isConfigured, chatComplete, chatStream } from "./ai/providers.js";
 import { createRobot, RobotCommand } from "./robot/adapter.js";
 import { ttsStatus, synthesize } from "./tts.js";
-import { registerAuth, requireUser, userOf } from "./auth.js";
-import { registerActivity, addAlert } from "./activity.js";
+import { registerAuth, requireUser, userOf, ensureAdmin } from "./auth.js";
+import { addAlert } from "./activity.js";
+import { registerAdmin } from "./admin.js";
 import { DATA } from "./store.js";
 
 const app = express();
@@ -25,8 +26,9 @@ app.use((req, _res, next) => {
   }
   next();
 });
+ensureAdmin();
 registerAuth(app);
-registerActivity(app);
+registerAdmin(app);
 
 const SYSTEM: Record<string, string> = {
   en: "You are a warm, patient companion for an elderly resident of a care center. Use short, simple sentences and a kind tone. Reply in English. Never diagnose or give medicine dosages; for any health worry, gently tell them to call a caregiver using the red Call Caregiver button. Suggest games, stories or music to keep them engaged.",

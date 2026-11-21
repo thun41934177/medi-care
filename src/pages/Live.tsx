@@ -175,21 +175,21 @@ export default function Live() {
   return (
     <div className="live">
       <div className="live-top">
-        <span className="live-badge"><i /> {t("liveCall")}</span>
+        <span className="live-badge"><i /> {t("voiceConversation")}</span>
         {emergency && <Link to="/sos"><button className="danger small"><Icon name="alert" size={18} /> {t("sos")}</button></Link>}
       </div>
 
       <div className="live-center">
         <button className={`live-orb ${paused || muted ? "idle" : phase}`} onClick={paused || phase === "speaking" || phase === "idle" ? interrupt : undefined} aria-label={label}>
           <span className="live-glow" />
-          <span className="live-core"><Icon name={phase === "speaking" ? "volume" : phase === "thinking" ? "sparkle" : "mic"} size={64} stroke={1.8} /></span>
+          <span className="live-core"><Icon name={phase === "speaking" ? "volume" : phase === "thinking" ? "clock" : "mic"} size={56} stroke={1.8} /></span>
         </button>
         <div className="live-label">{label}</div>
       </div>
 
       <div className="live-caps">
-        {userCap && <p className="cap-user">“{userCap}”</p>}
-        {aiCap && <p className="cap-ai">{aiCap}</p>}
+        {userCap && <div className="cap"><small>{t("youLabel")}</small><p>{userCap}</p></div>}
+        {aiCap && <div className="cap ai"><small>{t("assistantLabel")}</small><p>{aiCap}</p></div>}
       </div>
 
       <div className="live-controls">

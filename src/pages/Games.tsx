@@ -4,6 +4,7 @@ import { useApp } from "../store";
 import { speak } from "../lib/speech";
 import { GAMES, Level } from "../games";
 import PageHeader from "../components/PageHeader";
+import { syncGame } from "../lib/sync";
 import Icon from "../components/Icon";
 
 const TONES = ["blue", "purple", "green", "orange"];
@@ -20,7 +21,9 @@ export default function Games() {
   async function finish(score: number, total: number) {
     setResult({ score, total });
     speak(`${t("correct")} ${t("score")} ${score}/${total}`, lang);
-    await db.games.add({ at: Date.now(), game: game!.id, level, score, total });
+    const entry = { at: Date.now(), game: game!.id, level, score, total };
+    await db.games.add(entry);
+    syncGame(entry);
     fetch("/api/robot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "face", emotion: "happy" }) }).catch(() => {});
   }
 

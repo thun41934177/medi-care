@@ -27,7 +27,7 @@ export default function Start() {
         <Logo size={64} />
         <h1 className="brand">{t("appName")}</h1>
         <p className="lead">{t("startDesc")}</p>
-        <button className="cta" onClick={() => { speak(t("welcome"), lang); nav(user ? "/home" : "/login"); }}>
+        <button className="cta" onClick={() => { speak(t("welcome"), lang); nav(user ? (user.isAdmin ? "/admin" : "/home") : "/login"); }}>
           {t("getStarted")} <Icon name="arrow" size={32} stroke={2.6} />
         </button>
       </div>

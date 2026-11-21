@@ -8,7 +8,7 @@ export interface Provider {
 }
 
 export const PROVIDERS: Provider[] = [
-  { id: "qwen-local", label: "Qwen 2.5 (local, private)", baseUrl: "http://localhost:11434/v1", model: "qwen2.5:7b", local: true },
+  { id: "qwen-local", label: "Qwen 2.5 (local, private)", baseUrl: process.env.OLLAMA_URL || "http://localhost:11434/v1", model: process.env.QWEN_MODEL || "qwen2.5:7b", local: true },
   { id: "deepseek-local", label: "DeepSeek R1 (local)", baseUrl: "http://localhost:11434/v1", model: "deepseek-r1:7b", local: true },
   { id: "gemma-local", label: "Gemma 3 (local)", baseUrl: "http://localhost:11434/v1", model: "gemma3:4b", local: true },
   { id: "gemini", label: "Google Gemini (free tier)", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", model: "gemini-2.0-flash", apiKeyEnv: "GEMINI_API_KEY", local: false },

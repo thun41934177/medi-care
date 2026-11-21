@@ -3,6 +3,7 @@ import { db, HealthLog } from "../db";
 import { useApp } from "../store";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
+import { syncHealth } from "../lib/sync";
 import Empty from "../components/Empty";
 
 function outOfRange(h: HealthLog) {
@@ -29,6 +30,7 @@ export default function Health() {
     const n = (s: string) => (s === "" ? undefined : Number(s));
     const entry: HealthLog = { at: Date.now(), sys: n(sys), dia: n(dia), sugar: n(sugar), sleep: n(sleep), mood: mood || undefined };
     await db.health.add(entry);
+    syncHealth(entry);
     const bad = outOfRange(entry);
     setWarn(bad);
     if (bad) {

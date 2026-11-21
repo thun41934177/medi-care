@@ -3,6 +3,7 @@ import { db, Med, todayStr } from "../db";
 import { useApp } from "../store";
 import { speak, stopSpeaking } from "./speech";
 import Icon from "../components/Icon";
+import { syncDose } from "./sync";
 
 const hhmm = () => new Date().toTimeString().slice(0, 5);
 
@@ -35,7 +36,7 @@ export default function ReminderWatcher() {
   if (!due) return null;
 
   async function answer(status: "taken" | "skipped") {
-    if (status === "taken") await db.doses.add({ medId: due!.id!, date: todayStr(), status });
+    if (status === "taken") { await db.doses.add({ medId: due!.id!, date: todayStr(), status }); syncDose(due!.name, due!.time, todayStr(), "taken"); }
     else snoozed.current[due!.id!] = Date.now() + 10 * 60_000; // ask again in 10 min
     stopSpeaking();
     setDue(null);

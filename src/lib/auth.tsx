@@ -2,8 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, Re
 import { useApp } from "../store";
 import { openUserDb } from "../db";
 import { stopSpeaking } from "./speech";
+import { syncAll } from "./sync";
 
-export interface AuthUser { id: string; username: string; name: string; room: string; roomCode: string }
+export interface AuthUser { id: string; username: string; name: string; room: string; roomCode: string; isAdmin: boolean }
 interface Ctx {
   user: AuthUser | null;
   loading: boolean;
@@ -49,6 +50,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     return () => { window.fetch = orig; };
   }, []);
+
+  // heartbeat (shows "online" to the administrator) and a copy of this resident's records
+  useEffect(() => {
+    if (!user) return;
+    const ping = () => fetch("/api/ping", { method: "POST" }).catch(() => {});
+    ping();
+    if (!user.isAdmin) syncAll();
+    const id = setInterval(ping, 30_000);
+    return () => clearInterval(id);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function send(url: string, body: unknown): Promise<string> {
     try {

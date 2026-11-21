@@ -14,11 +14,13 @@ import Family from "./pages/Family";
 import Join from "./pages/Join";
 import CallOverlay from "./components/CallOverlay";
 import Sidebar from "./components/Sidebar";
+import PatientBanner from "./components/PatientBanner";
 import Meds from "./pages/Meds";
 import Health from "./pages/Health";
 import Sos from "./pages/Sos";
 import Login from "./pages/Login";
-import Staff from "./pages/Staff";
+import Admin from "./pages/Admin";
+import AdminUser from "./pages/AdminUser";
 import Settings from "./pages/Settings";
 import Games from "./pages/Games";
 import ReminderWatcher from "./lib/ReminderWatcher";
@@ -37,17 +39,20 @@ export default function App() {
   const nav = useNavigate();
   const { user, loading } = useAuth();
   const publicPath = loc.pathname === "/" || loc.pathname === "/login" || loc.pathname.startsWith("/join");
-  const showChrome = !!user && !["/", "/home", "/modes", "/sos", "/live", "/login"].includes(loc.pathname) && !loc.pathname.startsWith("/join");
+  const showChrome = !!user && !user.isAdmin && !["/", "/home", "/modes", "/sos", "/live", "/login"].includes(loc.pathname) && !loc.pathname.startsWith("/join");
   const isHome = ["/home", "/friend", "/activities"].includes(loc.pathname);
 
   if (loading) return <div className="boot">{t("loading")}</div>;
   // signed-out people go to the login screen
   if (!user && !publicPath) return <Navigate to="/login" replace />;
+  // only the administrator may open /admin, and the administrator only uses the admin screens
+  if (user && !user.isAdmin && loc.pathname.startsWith("/admin")) return <Navigate to="/home" replace />;
+  if (user?.isAdmin && !publicPath && !loc.pathname.startsWith("/admin")) return <Navigate to="/admin" replace />;
 
   return (
     <>
-      {user && <ReminderWatcher />}
-      {user && <CallOverlay />}
+      {user && !user.isAdmin && <ReminderWatcher />}
+      {user && !user.isAdmin && <CallOverlay />}
       {showChrome && (
         <div className="appbar">
           {!isHome && <button className="icon-btn" onClick={() => nav(-1)} aria-label={t("back")}><Icon name="back" /></button>}
@@ -63,6 +68,7 @@ export default function App() {
       )}
       {showChrome && <Sidebar />}
       <div className={showChrome ? "has-chrome" : ""}>
+      {showChrome && <PatientBanner />}
       <Routes>
         <Route path="/" element={<Start />} />
         <Route path="/home" element={<Home />} />
@@ -78,7 +84,9 @@ export default function App() {
         <Route path="/games" element={<Games />} />
         <Route path="/sos" element={<Sos />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/staff" element={<Staff />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin/users/:id" element={<AdminUser />} />
+        <Route path="/staff" element={<Navigate to={user?.isAdmin ? "/admin" : "/home"} replace />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
       </div>

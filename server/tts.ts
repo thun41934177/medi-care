@@ -5,32 +5,41 @@ import os from "node:os";
 import path from "node:path";
 
 /**
- * Text-to-speech using the computer's own voices (macOS `say`), all offline.
- * This gives reliable Thai and English speech to any browser or tablet that connects.
+ * Text-to-speech using the server computer's own voices, all offline:
+ *  - macOS: the built-in `say` voices (Thai: Kanya)
+ *  - Linux (e.g. Raspberry Pi / Ubuntu): `espeak-ng` (install with: sudo apt install espeak-ng)
+ * Every browser or tablet that connects can use these voices.
  */
 interface SayVoice { name: string; locale: string }
 
 const CACHE = path.join(os.tmpdir(), "medicare-tts");
 fs.mkdirSync(CACHE, { recursive: true });
 
+const isMac = process.platform === "darwin";
 let voices: SayVoice[] = [];
+let espeak = false;
+
 const ready = new Promise<void>((resolve) => {
-  if (process.platform !== "darwin") return resolve();
-  execFile("say", ["-v", "?"], (err, out) => {
-    if (!err) {
-      voices = out.split("\n").flatMap((l) => {
-        const m = l.match(/^(.*?)\s+([a-z]{2}_[A-Z]{2})\s+#/);
-        return m ? [{ name: m[1].trim(), locale: m[2] }] : [];
-      });
-    }
-    resolve();
-  });
+  if (isMac) {
+    execFile("say", ["-v", "?"], (err, out) => {
+      if (!err) {
+        voices = out.split("\n").flatMap((l) => {
+          const m = l.match(/^(.*?)\s+([a-z]{2}_[A-Z]{2})\s+#/);
+          return m ? [{ name: m[1].trim(), locale: m[2] }] : [];
+        });
+      }
+      resolve();
+    });
+  } else {
+    execFile("espeak-ng", ["--version"], (err) => { espeak = !err; resolve(); });
+  }
 });
 
 const EN_FAVORITES = ["Ava", "Allison", "Samantha", "Susan", "Serena", "Karen", "Moira", "Daniel"];
 const NOVELTY = /albert|bad news|bahh|bells|boing|bubbles|cellos|deranged|good news|hysterical|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|kathy|ralph|bruce/i;
 
 export function voiceFor(lang: string): string | null {
+  if (espeak) return lang === "th" ? "th" : "en-us";
   if (lang === "th") return voices.find((v) => v.locale === "th_TH")?.name ?? null;
   const en = voices.filter((v) => v.locale.startsWith("en_") && !NOVELTY.test(v.name));
   for (const fav of EN_FAVORITES) {
@@ -42,7 +51,8 @@ export function voiceFor(lang: string): string | null {
 
 export async function ttsStatus() {
   await ready;
-  return { available: voices.length > 0, voices: { th: voiceFor("th"), en: voiceFor("en") } };
+  const label = (l: string) => (espeak ? `espeak-ng (${voiceFor(l)})` : voiceFor(l));
+  return { available: espeak || voices.length > 0, voices: { th: label("th"), en: label("en") } };
 }
 
 /** Returns the path of a WAV file with the spoken text (cached). */
@@ -50,7 +60,7 @@ export async function synthesize(text: string, lang: string, rate: number): Prom
   await ready;
   const voice = voiceFor(lang);
   if (!voice) throw new Error("no voice");
-  // Thai is read more slowly: the built-in Thai voice sounds hurried and unnatural at normal speed
+  // Thai is read more slowly: it sounds hurried and unnatural at normal speed
   const wpm = Math.min(260, Math.max(100, Math.round((lang === "th" ? 150 : 185) * (rate || 0.92))));
   const clean = text.replace(/\[\[[^\]]*\]\]/g, "").slice(0, 600);
   const file = path.join(CACHE, crypto.createHash("sha1").update(`${voice}|${wpm}|${clean}`).digest("hex") + ".wav");
@@ -58,14 +68,18 @@ export async function synthesize(text: string, lang: string, rate: number): Prom
 
   await new Promise<void>((resolve, reject) => {
     const tmp = file + ".tmp";
-    // text goes in through stdin (-f -), so it can never be read as a command-line option
-    const p = spawn("say", ["-v", voice, "-r", String(wpm), "-o", tmp, "--file-format=WAVE", "--data-format=LEI16@22050", "-f", "-"], { stdio: ["pipe", "ignore", "ignore"] });
+    // text goes in through stdin, so it can never be read as a command-line option
+    const cmd = espeak ? "espeak-ng" : "say";
+    const args = espeak
+      ? ["-v", voice, "-s", String(wpm), "-w", tmp, "--stdin"]
+      : ["-v", voice, "-r", String(wpm), "-o", tmp, "--file-format=WAVE", "--data-format=LEI16@22050", "-f", "-"];
+    const p = spawn(cmd, args, { stdio: ["pipe", "ignore", "ignore"] });
     const timer = setTimeout(() => { p.kill(); reject(new Error("tts timeout")); }, 20_000);
     p.on("error", (e) => { clearTimeout(timer); reject(e); });
     p.on("close", (code) => {
       clearTimeout(timer);
       if (code === 0 && fs.existsSync(tmp)) { fs.renameSync(tmp, file); resolve(); }
-      else reject(new Error(`say exited with ${code}`));
+      else reject(new Error(`${cmd} exited with ${code}`));
     });
     p.stdin.end(clean);
   });

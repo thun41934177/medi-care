@@ -4,6 +4,7 @@ import { useApp } from "../store";
 import { speak, stopSpeaking, listen, canListen, looksLikeEmergency } from "../lib/speech";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
+import Empty from "../components/Empty";
 
 interface Msg { role: "user" | "assistant"; content: string }
 
@@ -99,7 +100,7 @@ export default function Chat() {
 
   return (
     <div className="page">
-      <PageHeader icon="chat" title={t("talk")} color="var(--g-blue)" sub="Qwen AI" />
+      <PageHeader icon="chat" title={t("talk")} sub={t("chatSub")} />
       <Link to="/live"><button className="primary" style={{ width: "100%", marginBottom: ".8rem", minHeight: "4rem", fontSize: "1.15rem" }}><Icon name="phone" size={24} /> {t("callAi")}</button></Link>
       {emergency && (
         <Link to="/sos"><button className="danger" style={{ width: "100%", marginBottom: ".8rem", minHeight: "4rem" }}><Icon name="alert" /> {t("needHelpPrompt")}</button></Link>
@@ -117,10 +118,10 @@ export default function Chat() {
       {(micError || !canListen()) && <p className="msg-bad">{t("micBlocked")}</p>}
 
       <div className="chat">
-        {msgs.length === 0 && <div className="empty"><Icon name="sparkle" size={34} /><br />{t("chatEmpty")}</div>}
+        {msgs.length === 0 && <Empty icon="chat" title={t("chatEmpty")} />}
         {msgs.map((m, i) => (
           <div key={i} className={`msg ${m.role}`}>
-            <span className="avatar">{m.role === "assistant" ? <Icon name="sparkle" size={20} /> : <Icon name="smile" size={20} />}</span>
+            <div className="who">{m.role === "assistant" ? t("assistantLabel") : t("youLabel")}</div>
             <div className={`bubble ${m.role}`}>
               {m.content}
               {m.role === "assistant" && (
@@ -130,7 +131,7 @@ export default function Chat() {
           </div>
         ))}
         {busy && (
-          <div className="msg assistant"><span className="avatar"><Icon name="sparkle" size={20} /></span><div className="bubble assistant">… {t("thinking")}</div></div>
+          <div className="msg assistant"><div className="who">{t("assistantLabel")}</div><div className="bubble assistant">{t("thinking")}…</div></div>
         )}
         <div ref={end} />
       </div>

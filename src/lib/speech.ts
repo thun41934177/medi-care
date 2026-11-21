@@ -20,7 +20,7 @@ export function onVoicesChanged(cb: () => void) { listeners.add(cb); return () =
 
 const norm = (s: string) => s.toLowerCase().replace("_", "-");
 export function voicesFor(lang: Lang): SpeechSynthesisVoice[] {
-  const all = cache.length ? cache : loadVoices();
+  const all = cache.length ? cache : (cache = synth?.getVoices() ?? []); // read silently: notifying here re-renders callers forever
   return all.filter((v) => norm(v.lang).startsWith(lang));
 }
 

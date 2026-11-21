@@ -19,8 +19,7 @@ export default function Friend() {
       <div className="grid2" style={{ marginTop: "1rem" }}>
         <Link to="/family" className="tile" data-tone="green">
           <span className="ico"><Icon name="video" size={32} /></span>
-          {t("family")}
-          <small style={{ fontWeight: 700, fontSize: ".95rem", opacity: .9 }}>{t("familySub")}</small>
+          <span className="tile-text">{t("family")}<small>{t("familySub")}</small></span>
         </Link>
         <Link to="/games" className="tile" data-tone="orange">
           <span className="ico"><Icon name="game" size={32} /></span>

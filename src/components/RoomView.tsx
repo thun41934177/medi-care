@@ -18,9 +18,9 @@ export default function RoomView({ me, aside }: { me: "resident" | "family"; asi
 
   useEffect(() => { markRead(); end.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, [messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const others = peers.filter((p) => p.id !== myId);
-  const offline = me === "resident" ? known.filter((k) => !others.some((p) => p.name === k)) : [];
   const target = me === "resident" ? "family" : "resident";
+  const others = peers.filter((p) => p.id !== myId && p.role === target);
+  const offline = me === "resident" ? known.filter((k) => !others.some((p) => p.name === k)) : [];
 
   function submit(v = text) {
     v = v.trim();
@@ -63,9 +63,8 @@ export default function RoomView({ me, aside }: { me: "resident" | "family"; asi
           const mine = m.role === me;
           return (
             <div key={m.id} className={`msg ${mine ? "user" : "assistant"}`}>
-              <span className="avatar">{m.from.slice(0, 1).toUpperCase()}</span>
+              <div className="who">{mine ? t("youLabel") : m.from}</div>
               <div className={`bubble ${mine ? "user" : "assistant"}`}>
-                {!mine && <div className="muted" style={{ fontWeight: 800 }}>{m.from}</div>}
                 {m.text}
                 <div className="stamp">{new Date(m.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
               </div>

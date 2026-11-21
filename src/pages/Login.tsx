@@ -18,7 +18,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  if (!loading && user) return <Navigate to="/home" replace />;
+  if (!loading && user) return <Navigate to={user.isAdmin ? "/admin" : "/home"} replace />;
 
   const up = mode === "up";
 
